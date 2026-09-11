@@ -1,412 +1,382 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Antrean Klinik Web App</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0d9488">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Antrean Klinik PWA</title>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063822.png">
+    
+    <!-- Tailwind CSS & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        // CONFIGURATION: Tempelkan URL Web App GAS Anda di sini
+        const GAS_URL = "URL_WEB_APP_GAS_ANDA_DI_SINI";
+    </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 font-sans min-h-screen antialiased text-slate-800">
 
-  <!-- CONFIG MODAL (URL GAS) -->
-  <div id="configModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <h3 class="text-xl font-bold text-slate-900 mb-2">Set API Endpoint GAS</h3>
-      <p class="text-sm text-slate-500 mb-4">Masukkan Web App URL Deployment dari Google Apps Script Anda.</p>
-      <input type="text" id="gasUrlInput" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 mb-4 text-sm" placeholder="https://script.google.com/macros/s/.../exec">
-      <button onclick="saveGasUrl()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-lg transition duration-200">Simpan URL</button>
-    </div>
-  </div>
-
-  <!-- NAVBAR -->
-  <nav id="navbar" class="hidden bg-slate-900 text-white shadow-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-3">
-          <div class="bg-teal-500 p-2 rounded-xl text-slate-900">
-            <i class="fa-solid fa-hospital-user text-xl"></i>
-          </div>
-          <span class="font-bold text-lg tracking-wide text-teal-400">MediQueue Pro</span>
-        </div>
-        <div class="flex items-center space-x-4">
-          <div class="text-right hidden sm:block">
-            <p id="navUserName" class="text-sm font-semibold leading-none"></p>
-            <p id="navUserRole" class="text-xs text-teal-400 uppercase tracking-wider mt-1"></p>
-          </div>
-          <button onclick="changeGasUrl()" title="Set API URL" class="text-slate-400 hover:text-white p-2">
-            <i class="fa-solid fa-gear"></i>
-          </button>
-          <button onclick="logout()" class="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg text-sm transition">
-            <i class="fa-solid fa-right-from-bracket mr-1"></i> Keluar
-          </button>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <!-- MAIN CONTAINER -->
-  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-
-    <!-- 1. LOGIN SCREEN -->
-    <div id="loginSection" class="min-h-[80vh] flex items-center justify-center">
-      <div class="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
-        <div class="text-center mb-8">
-          <div class="inline-flex bg-teal-50 text-teal-600 p-4 rounded-2xl mb-3">
-            <i class="fa-solid fa-user-shield text-3xl"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-slate-900">Masuk System</h2>
-          <p class="text-sm text-slate-500 mt-1">Pilih role login petugas klinik/rumah sakit</p>
-        </div>
-
-        <form onsubmit="handleLogin(event)" class="space-y-4">
-          <div>
-            <label class="text-xs font-semibold text-slate-600 uppercase mb-1 block">Username</label>
-            <input type="text" id="loginUsername" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none transition" placeholder="Username (misal: loket, dokter, farmasi)">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-600 uppercase mb-1 block">Password</label>
-            <input type="password" id="loginPassword" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none transition" placeholder="••••••••">
-          </div>
-          <button type="submit" id="btnLogin" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-teal-600/30 transition duration-200 flex items-center justify-center">
-            <span>Masuk ke Dashboard</span>
-          </button>
-        </form>
-
-        <div class="mt-6 pt-6 border-t border-slate-100 text-xs text-slate-400 text-center">
-          Default akun demo: <br>
-          <b>loket / 12345</b> | <b>dokter / 12345</b> | <b>farmasi / 12345</b>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. DASHBOARD LOKET / PENDAFTARAN -->
-    <div id="pendaftaranDashboard" class="hidden space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
-          <div class="bg-blue-50 text-blue-600 p-3.5 rounded-xl"><i class="fa-solid fa-users text-2xl"></i></div>
-          <div><p class="text-xs font-semibold text-slate-400">Total Hari Ini</p><h4 id="statTotal" class="text-2xl font-bold text-slate-800">0</h4></div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
-          <div class="bg-amber-50 text-amber-600 p-3.5 rounded-xl"><i class="fa-solid fa-stethoscope text-2xl"></i></div>
-          <div><p class="text-xs font-semibold text-slate-400">Antre Medis</p><h4 id="statMedis" class="text-2xl font-bold text-slate-800">0</h4></div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
-          <div class="bg-purple-50 text-purple-600 p-3.5 rounded-xl"><i class="fa-solid fa-pills text-2xl"></i></div>
-          <div><p class="text-xs font-semibold text-slate-400">Antre Farmasi</p><h4 id="statFarmasi" class="text-2xl font-bold text-slate-800">0</h4></div>
-        </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center space-x-4">
-          <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-xl"><i class="fa-solid fa-circle-check text-2xl"></i></div>
-          <div><p class="text-xs font-semibold text-slate-400">Selesai Hari Ini</p><h4 id="statSelesai" class="text-2xl font-bold text-slate-800">0</h4></div>
-        </div>
-      </div>
-
-      <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center"><i class="fa-solid fa-address-card text-teal-600 mr-2"></i> Form Registrasi Pasien Baru</h3>
-        <form onsubmit="handleDaftarPasien(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">NIK Pasien</label>
-            <input type="text" name="nik" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">Nama Lengkap Pasien</label>
-            <input type="text" name="nama_pasien" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">Tanggal Lahir</label>
-            <input type="date" name="tgl_lahir" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">No. Telp / WA</label>
-            <input type="text" name="no_hp" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div class="md:col-span-2">
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">Alamat</label>
-            <input type="text" name="alamat" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div class="md:col-span-2">
-            <label class="text-xs font-semibold text-slate-600 mb-1 block">Keluhan Utama / Alasan Berobat</label>
-            <textarea name="keluhan" rows="2" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
-          </div>
-          <div class="md:col-span-2 pt-2">
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-teal-600/30 transition">Daftarkan & Cetak Nomor Antrean</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 3. DASHBOARD TENAGA MEDIS -->
-    <div id="medisDashboard" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-900">Ruang Pemeriksaan Medis</h2>
-          <p class="text-sm text-slate-500">Daftar pasien menunggu tindakan / konsultasi</p>
-        </div>
-        <button onclick="loadAntreanMedis()" class="bg-teal-50 text-teal-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-100 transition"><i class="fa-solid fa-rotate mr-1"></i> Refresh Data</button>
-      </div>
-      <div id="medisContainer" class="grid grid-cols-1 gap-4"></div>
-    </div>
-
-    <!-- 4. DASHBOARD FARMASI -->
-    <div id="farmasiDashboard" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-900">Depo Farmasi & Apotek</h2>
-          <p class="text-sm text-slate-500">Daftar resep obat siap diproses & diserahkan</p>
-        </div>
-        <button onclick="loadAntreanFarmasi()" class="bg-teal-50 text-teal-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-100 transition"><i class="fa-solid fa-rotate mr-1"></i> Refresh Data</button>
-      </div>
-      <div id="farmasiContainer" class="grid grid-cols-1 gap-4"></div>
-    </div>
-
-  </main>
-
-  <script>
-    // --- APP STATE ---
-    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-    let gasUrl = localStorage.getItem('gasUrl') || '';
-
-    window.addEventListener('DOMContentLoaded', () => {
-      registerSW();
-      if (!gasUrl) {
-        document.getElementById('configModal').classList.remove('hidden');
-      } else if (currentUser) {
-        initSession();
-      }
-    });
-
-    function saveGasUrl() {
-      const url = document.getElementById('gasUrlInput').value.trim();
-      if (url) {
-        localStorage.setItem('gasUrl', url);
-        gasUrl = url;
-        document.getElementById('configModal').classList.add('hidden');
-        if (currentUser) initSession();
-      }
-    }
-
-    function changeGasUrl() {
-      document.getElementById('gasUrlInput').value = gasUrl;
-      document.getElementById('configModal').classList.remove('hidden');
-    }
-
-    // --- API CALL HELPER ---
-    async function apiCall(action, data = {}) {
-      if (!gasUrl) {
-        alert('URL GAS Endpoint belum di-set!');
-        return { success: false };
-      }
-      try {
-        const res = await fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action, data })
-        });
-        return await res.json();
-      } catch (e) {
-        console.error(e);
-        alert('Gagal menghubungi Server GAS: ' + e.message);
-        return { success: false };
-      }
-    }
-
-    // --- AUTHENTICATION ---
-    async function handleLogin(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btnLogin');
-      btn.disabled = true;
-      btn.innerText = 'Memverifikasi...';
-
-      const username = document.getElementById('loginUsername').value;
-      const password = document.getElementById('loginPassword').value;
-
-      const res = await apiCall('login', { username, password });
-      btn.disabled = false;
-      btn.innerText = 'Masuk ke Dashboard';
-
-      if (res.success) {
-        currentUser = res.user;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        initSession();
-      } else {
-        alert(res.message || 'Login Gagal');
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      currentUser = null;
-      location.reload();
-    }
-
-    function initSession() {
-      document.getElementById('loginSection').classList.add('hidden');
-      document.getElementById('navbar').classList.remove('hidden');
-      document.getElementById('navUserName').innerText = currentUser.nama;
-      document.getElementById('navUserRole').innerText = currentUser.role;
-
-      // Hide all view dashboards
-      document.getElementById('pendaftaranDashboard').classList.add('hidden');
-      document.getElementById('medisDashboard').classList.add('hidden');
-      document.getElementById('farmasiDashboard').classList.add('hidden');
-
-      if (currentUser.role === 'pendaftaran') {
-        document.getElementById('pendaftaranDashboard').classList.remove('hidden');
-        loadDashboardStats();
-      } else if (currentUser.role === 'medis') {
-        document.getElementById('medisDashboard').classList.remove('hidden');
-        loadAntreanMedis();
-      } else if (currentUser.role === 'farmasi') {
-        document.getElementById('farmasiDashboard').classList.remove('hidden');
-        loadAntreanFarmasi();
-      }
-    }
-
-    // --- LOKET ACTIONS ---
-    async function loadDashboardStats() {
-      const res = await apiCall('get_dashboard_stats');
-      if (res.success) {
-        document.getElementById('statTotal').innerText = res.stats.total;
-        document.getElementById('statMedis').innerText = res.stats.medis;
-        document.getElementById('statFarmasi').innerText = res.stats.farmasi;
-        document.getElementById('statSelesai').innerText = res.stats.selesai;
-      }
-    }
-
-    async function handleDaftarPasien(e) {
-      e.preventDefault();
-      const form = e.target;
-      const data = {
-        nik: form.nik.value,
-        nama_pasien: form.nama_pasien.value,
-        tgl_lahir: form.tgl_lahir.value,
-        no_hp: form.no_hp.value,
-        alamat: form.alamat.value,
-        keluhan: form.keluhan.value
-      };
-
-      const res = await apiCall('daftar_pasien', data);
-      if (res.success) {
-        alert(`Berhasil Didaftarkan!\nNomor Antrean: ${res.no_antrean}`);
-        form.reset();
-        loadDashboardStats();
-      }
-    }
-
-    // --- MEDIS ACTIONS ---
-    async function loadAntreanMedis() {
-      const container = document.getElementById('medisContainer');
-      container.innerHTML = '<p class="text-center py-8 text-slate-400">Memuat data antrean...</p>';
-      
-      const res = await apiCall('get_antrean_medis');
-      if (res.success && res.data.length > 0) {
-        container.innerHTML = res.data.map(item => `
-          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6">
-            <div class="md:w-1/3 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6">
-              <span class="inline-block bg-teal-100 text-teal-800 text-xs font-bold px-3 py-1 rounded-full mb-2">${item.no_antrean}</span>
-              <h4 class="text-lg font-bold text-slate-900">${item.nama_pasien}</h4>
-              <p class="text-xs text-slate-500 mt-1">NIK: ${item.nik}</p>
-              <div class="mt-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600">
-                <strong>Keluhan:</strong> ${item.keluhan}
-              </div>
-            </div>
-            <div class="md:w-2/3 space-y-3">
-              <div>
-                <label class="text-xs font-semibold text-slate-600 mb-1 block">Diagnosa Dokter</label>
-                <input type="text" id="diag_${item.id_antrean}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Isi diagnosa...">
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-xs font-semibold text-slate-600 mb-1 block">Rincian Obat</label>
-                  <textarea id="obat_${item.id_antrean}" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Paracetamol 500mg, Amoxicillin..."></textarea>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl mb-4 shadow-sm">
+                    <i class="fa-solid fa-hospital-user text-3xl"></i>
                 </div>
+                <h1 class="text-2xl font-bold text-slate-900">Sistem Antrean Klinik</h1>
+                <p class="text-sm text-slate-500 mt-1">Silakan masuk sesuai hak akses Anda</p>
+            </div>
+
+            <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                  <label class="text-xs font-semibold text-slate-600 mb-1 block">Instruksi Dosis</label>
-                  <textarea id="dosis_${item.id_antrean}" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="3x1 sesudah makan..."></textarea>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" id="username" required class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    </div>
                 </div>
-              </div>
-              <button onclick="submitMedis('${item.id_antrean}')" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-xl shadow transition text-sm">
-                <i class="fa-solid fa-paper-plane mr-1"></i> Kirim Resep ke Farmasi
-              </button>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    </div>
+                </div>
+
+                <div id="loginAlert" class="hidden p-3 rounded-lg bg-red-50 text-red-600 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span id="loginAlertText"></span>
+                </div>
+
+                <button type="submit" id="btnLogin" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition flex justify-center items-center gap-2">
+                    <span>Masuk ke Sistem</span>
+                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="appScreen" class="hidden min-h-screen flex flex-col">
+        <!-- NAVBAR -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-clinic-medical text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-900 leading-none">Klinik Sehat</h2>
+                        <span id="userRoleBadge" class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md mt-1 inline-block">Role</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span id="userInfo" class="text-sm font-semibold text-slate-700 hidden sm:inline">User</span>
+                    <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition" title="Keluar">
+                        <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                    </button>
+                </div>
             </div>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = '<div class="bg-white p-8 rounded-2xl text-center text-slate-400">Tidak ada antrean pasien saat ini.</div>';
-      }
-    }
+        </header>
 
-    async function submitMedis(idAntrean) {
-      const data = {
-        id_antrean: idAntrean,
-        diagnosa: document.getElementById('diag_' + idAntrean).value,
-        rincian_obat: document.getElementById('obat_' + idAntrean).value,
-        instruksi_dosis: document.getElementById('dosis_' + idAntrean).value,
-        id_tenaga_medis: currentUser.nama
-      };
-
-      if (!data.diagnosa || !data.rincian_obat) {
-        alert('Mohon lengkapi diagnosa & obat!');
-        return;
-      }
-
-      const res = await apiCall('submit_medis', data);
-      if (res.success) {
-        alert('Resep berhasil dikirim ke Farmasi!');
-        loadAntreanMedis();
-      }
-    }
-
-    // --- FARMASI ACTIONS ---
-    async function loadAntreanFarmasi() {
-      const container = document.getElementById('farmasiContainer');
-      container.innerHTML = '<p class="text-center py-8 text-slate-400">Memuat data resep...</p>';
-
-      const res = await apiCall('get_antrean_farmasi');
-      if (res.success && res.data.length > 0) {
-        container.innerHTML = res.data.map(item => `
-          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-start justify-between gap-4">
-            <div class="space-y-2">
-              <div class="flex items-center space-x-2">
-                <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">${item.no_antrean}</span>
-                <h4 class="text-lg font-bold text-slate-900">${item.nama_pasien}</h4>
-              </div>
-              <p class="text-xs text-slate-500">Diagnosa: <span class="font-semibold text-slate-700">${item.diagnosa}</span></p>
-              <div class="p-3 bg-purple-50/50 rounded-xl border border-purple-100 space-y-1 text-sm">
-                <p><strong>Rincian Obat:</strong> ${item.rincian_obat}</p>
-                <p class="text-xs text-purple-700"><strong>Dosis:</strong> ${item.instruksi_dosis}</p>
-              </div>
+        <!-- DASHBOARD CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            
+            <!-- PANEL PENDAFTARAN -->
+            <div id="panelPendaftaran" class="hidden">
+                <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold">Formulir Pendaftaran Pasien</h3>
+                            <p class="text-xs text-slate-400">Input data pasien dan keluhan awal</p>
+                        </div>
+                        <i class="fa-solid fa-id-card text-2xl text-blue-400"></i>
+                    </div>
+                    <form id="formPendaftaran" onsubmit="submitPendaftaran(event)" class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">NIK Pasien</label>
+                                <input type="text" id="p_nik" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
+                                <input type="text" id="p_nama" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Lahir</label>
+                                <input type="date" id="p_tgl_lahir" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">No. WhatsApp/HP</label>
+                                <input type="text" id="p_no_hp" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Alamat Singkat</label>
+                            <input type="text" id="p_alamat" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Keluhan Utama</label>
+                            <textarea id="p_keluhan" rows="3" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition">
+                            Simpan & Terbit Antrean
+                        </button>
+                    </form>
+                </div>
             </div>
-            <button onclick="submitFarmasi('${item.id_antrean}')" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition text-sm flex-shrink-0">
-              <i class="fa-solid fa-check-circle mr-1"></i> Serahkan Obat & Selesai
-            </button>
-          </div>
-        `).join('');
-      } else {
-        container.innerHTML = '<div class="bg-white p-8 rounded-2xl text-center text-slate-400">Tidak ada resep obat yang menunggu.</div>';
-      }
-    }
 
-    async function submitFarmasi(idAntrean) {
-      const res = await apiCall('submit_farmasi', { id_antrean: idAntrean });
-      if (res.success) {
-        alert('Obat telah diserahkan. Antrean Selesai!');
-        loadAntreanFarmasi();
-      }
-    }
+            <!-- PANEL TENAGA MEDIS -->
+            <div id="panelMedis" class="hidden space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-bold text-slate-900">Antrean Pemeriksaan Medis</h3>
+                    <button onclick="fetchAntreanMedis()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
+                    </button>
+                </div>
+                <div id="listMedis" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
 
-    // --- SERVICE WORKER (PWA) ---
-    function registerSW() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Fail:', err));
-      }
-    }
-  </script>
+            <!-- PANEL FARMASI -->
+            <div id="panelFarmasi" class="hidden space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-bold text-slate-900">Antrean Penyiapan Obat</h3>
+                    <button onclick="fetchAntreanFarmasi()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
+                    </button>
+                </div>
+                <div id="listFarmasi" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Global User State
+        let currentUser = null;
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW Registered:', reg.scope))
+                    .catch(err => console.error('SW Error:', err));
+            });
+        }
+
+        // Generic API Caller
+        async function callAPI(action, payload = {}) {
+            if (!GAS_URL || GAS_URL.includes("URL_WEB_APP_GAS_ANDA_DI_SINI")) {
+                alert("URL GAS Backend belum dikonfigurasi di file HTML.");
+                throw new Error("Missing GAS_URL");
+            }
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action, ...payload })
+                });
+                return await response.json();
+            } catch (err) {
+                console.error("API Error:", err);
+                alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+                throw err;
+            }
+        }
+
+        // Handle Login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnLogin");
+            const alertBox = document.getElementById("loginAlert");
+            
+            btn.disabled = true;
+            btn.innerText = "Memproses...";
+            alertBox.classList.add("hidden");
+
+            const u = document.getElementById("username").value;
+            const p = document.getElementById("password").value;
+
+            try {
+                const res = await callAPI("login", { username: u, password: p });
+                if (res.status === "success") {
+                    currentUser = res.user;
+                    initDashboard();
+                } else {
+                    document.getElementById("loginAlertText").innerText = res.message;
+                    alertBox.classList.remove("hidden");
+                }
+            } catch (e) {
+                // error handled in callAPI
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Masuk ke Sistem";
+            }
+        }
+
+        // Setup UI Based on Role
+        function initDashboard() {
+            document.getElementById("loginScreen").classList.add("hidden");
+            document.getElementById("appScreen").classList.remove("hidden");
+
+            document.getElementById("userInfo").innerText = currentUser.nama;
+            document.getElementById("userRoleBadge").innerText = currentUser.role;
+
+            // Hide all panels
+            document.getElementById("panelPendaftaran").classList.add("hidden");
+            document.getElementById("panelMedis").classList.add("hidden");
+            document.getElementById("panelFarmasi").classList.add("hidden");
+
+            if (currentUser.role === "PENDAFTARAN") {
+                document.getElementById("panelPendaftaran").classList.remove("hidden");
+            } else if (currentUser.role === "MEDIS") {
+                document.getElementById("panelMedis").classList.remove("hidden");
+                fetchAntreanMedis();
+            } else if (currentUser.role === "FARMASI") {
+                document.getElementById("panelFarmasi").classList.remove("hidden");
+                fetchAntreanFarmasi();
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            document.getElementById("formLogin").reset();
+            document.getElementById("appScreen").classList.add("hidden");
+            document.getElementById("loginScreen").classList.remove("hidden");
+        }
+
+        // Submit Pendaftaran Pasien
+        async function submitPendaftaran(e) {
+            e.preventDefault();
+            const payload = {
+                nik: document.getElementById("p_nik").value,
+                nama_pasien: document.getElementById("p_nama").value,
+                tgl_lahir: document.getElementById("p_tgl_lahir").value,
+                no_hp: document.getElementById("p_no_hp").value,
+                alamat: document.getElementById("p_alamat").value,
+                keluhan: document.getElementById("p_keluhan").value
+            };
+
+            const res = await callAPI("daftarPasien", payload);
+            if (res.status === "success") {
+                alert(`Pasien Berhasil Didaftarkan!\nNomor Antrean: ${res.no_antrean}`);
+                document.getElementById("formPendaftaran").reset();
+            }
+        }
+
+        // Fetch & Render Medis
+        async function fetchAntreanMedis() {
+            const container = document.getElementById("listMedis");
+            container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Memuat data...</div>`;
+            
+            const res = await callAPI("getAntreanMedis");
+            if (res.data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Tidak ada antrean medis.</div>`;
+                return;
+            }
+
+            container.innerHTML = res.data.map(item => `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-2xl font-black text-blue-600">${item.no_antrean}</span>
+                            <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-1 rounded">Medis</span>
+                        </div>
+                        <h4 class="font-bold text-slate-900">${item.nama_pasien}</h4>
+                        <p class="text-xs text-slate-500 mt-1"><strong>Keluhan:</strong> ${item.keluhan}</p>
+                        
+                        <div class="mt-4 space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Diagnosa</label>
+                                <input type="text" id="diag_${item.id_antrean}" class="w-full px-3 py-1.5 border rounded text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Rincian Obat</label>
+                                <textarea id="obat_${item.id_antrean}" rows="2" class="w-full px-3 py-1.5 border rounded text-xs"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Dosis / Instruksi</label>
+                                <input type="text" id="dosis_${item.id_antrean}" class="w-full px-3 py-1.5 border rounded text-xs">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="submitMedis('${item.id_antrean}')" class="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg transition">
+                        Selesai & Kirim ke Farmasi
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function submitMedis(idAntrean) {
+            const payload = {
+                id_antrean: idAntrean,
+                diagnosa: document.getElementById(`diag_${idAntrean}`).value,
+                rincian_obat: document.getElementById(`obat_${idAntrean}`).value,
+                instruksi_dosis: document.getElementById(`dosis_${idAntrean}`).value,
+                id_tenaga_medis: currentUser.nama
+            };
+
+            const res = await callAPI("submitMedis", payload);
+            if (res.status === "success") {
+                alert("Pemeriksaan selesai, resep diteruskan ke Farmasi!");
+                fetchAntreanMedis();
+            }
+        }
+
+        // Fetch & Render Farmasi
+        async function fetchAntreanFarmasi() {
+            const container = document.getElementById("listFarmasi");
+            container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Memuat data...</div>`;
+            
+            const res = await callAPI("getAntreanFarmasi");
+            if (res.data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Tidak ada resep antre.</div>`;
+                return;
+            }
+
+            container.innerHTML = res.data.map(item => `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-2xl font-black text-amber-500">${item.no_antrean}</span>
+                            <span class="text-xs bg-amber-50 text-amber-700 font-semibold px-2 py-1 rounded">Farmasi</span>
+                        </div>
+                        <h4 class="font-bold text-slate-900">${item.nama_pasien}</h4>
+                        <div class="mt-3 p-3 bg-slate-50 rounded-lg text-xs space-y-1">
+                            <p><strong>Resep Obat:</strong> ${item.rincian_obat}</p>
+                            <p><strong>Instruksi Dosis:</strong> ${item.instruksi_dosis}</p>
+                        </div>
+                    </div>
+                    <button onclick="submitFarmasi('${item.id_antrean}')" class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition">
+                        Obat Siap & Serahkan
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function submitFarmasi(idAntrean) {
+            const res = await callAPI("submitFarmasi", { id_antrean: idAntrean });
+            if (res.status === "success") {
+                alert("Obat telah diserahkan, antrean selesai!");
+                fetchAntreanFarmasi();
+            }
+        }
+    </script>
 </body>
 </html>
