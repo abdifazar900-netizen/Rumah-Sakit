@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Antrean Klinik PWA</title>
+    
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
@@ -13,12 +14,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- SweetAlert2 (Notifikasi Modern) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         // CONFIGURATION: Tempelkan URL Web App GAS Anda di sini
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzpdFipZVk7eVPrtX6G5BXWSWqbLG-6Bialr611J5fysyx1HmEwGG3T_1i6N-DGen1g8Q/exec";
+        const GAS_URL = "URL_WEB_APP_GAS_ANDA_DI_SINI";
     </script>
 </head>
 <body class="bg-slate-100 font-sans min-h-screen antialiased text-slate-800">
+
+    <!-- FULLSCREEN LOADING OVERLAY -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex-col items-center justify-center text-white">
+        <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <p id="loadingText" class="text-sm font-semibold tracking-wide">Memproses data...</p>
+    </div>
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
@@ -50,11 +60,6 @@
                         </span>
                         <input type="password" id="password" required class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     </div>
-                </div>
-
-                <div id="loginAlert" class="hidden p-3 rounded-lg bg-red-50 text-red-600 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <span id="loginAlertText"></span>
                 </div>
 
                 <button type="submit" id="btnLogin" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition flex justify-center items-center gap-2">
@@ -167,7 +172,6 @@
     </div>
 
     <script>
-        // Global User State
         let currentUser = null;
 
         // Service Worker Registration for PWA
@@ -179,12 +183,30 @@
             });
         }
 
-        // Generic API Caller
-        async function callAPI(action, payload = {}) {
+        // Overlay Helper
+        function showOverlay(message = 'Memproses data...') {
+            document.getElementById('loadingText').innerText = message;
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+        }
+
+        function hideOverlay() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
+        }
+
+        // Generic API Caller with SweetAlert Integration
+        async function callAPI(action, payload = {}, loadingMsg = 'Memproses request...') {
             if (!GAS_URL || GAS_URL.includes("URL_WEB_APP_GAS_ANDA_DI_SINI")) {
-                alert("URL GAS Backend belum dikonfigurasi di file HTML.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Konfigurasi Belum Selesai',
+                    text: 'URL Web App GAS belum dikonfigurasi di file index.html.'
+                });
                 throw new Error("Missing GAS_URL");
             }
+
+            showOverlay(loadingMsg);
 
             try {
                 const response = await fetch(GAS_URL, {
@@ -192,41 +214,48 @@
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({ action, ...payload })
                 });
-                return await response.json();
+                const data = await response.json();
+                return data;
             } catch (err) {
                 console.error("API Error:", err);
-                alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Gagal',
+                    text: 'Gagal terhubung ke server Google Apps Script. Periksa koneksi internet Anda.'
+                });
                 throw err;
+            } finally {
+                hideOverlay();
             }
         }
 
         // Handle Login
         async function handleLogin(e) {
             e.preventDefault();
-            const btn = document.getElementById("btnLogin");
-            const alertBox = document.getElementById("loginAlert");
-            
-            btn.disabled = true;
-            btn.innerText = "Memproses...";
-            alertBox.classList.add("hidden");
-
             const u = document.getElementById("username").value;
             const p = document.getElementById("password").value;
 
             try {
-                const res = await callAPI("login", { username: u, password: p });
+                const res = await callAPI("login", { username: u, password: p }, 'Verifikasi Login...');
                 if (res.status === "success") {
                     currentUser = res.user;
                     initDashboard();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Login Berhasil',
+                        text: `Selamat datang, ${currentUser.nama}`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 } else {
-                    document.getElementById("loginAlertText").innerText = res.message;
-                    alertBox.classList.remove("hidden");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Login',
+                        text: res.message || 'Username atau Password salah'
+                    });
                 }
             } catch (e) {
                 // error handled in callAPI
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Masuk ke Sistem";
             }
         }
 
@@ -238,7 +267,6 @@
             document.getElementById("userInfo").innerText = currentUser.nama;
             document.getElementById("userRoleBadge").innerText = currentUser.role;
 
-            // Hide all panels
             document.getElementById("panelPendaftaran").classList.add("hidden");
             document.getElementById("panelMedis").classList.add("hidden");
             document.getElementById("panelFarmasi").classList.add("hidden");
@@ -255,10 +283,23 @@
         }
 
         function handleLogout() {
-            currentUser = null;
-            document.getElementById("formLogin").reset();
-            document.getElementById("appScreen").classList.add("hidden");
-            document.getElementById("loginScreen").classList.remove("hidden");
+            Swal.fire({
+                title: 'Konfirmasi Keluar',
+                text: 'Apakah Anda yakin ingin keluar dari sistem?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#dc2626',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentUser = null;
+                    document.getElementById("formLogin").reset();
+                    document.getElementById("appScreen").classList.add("hidden");
+                    document.getElementById("loginScreen").classList.remove("hidden");
+                }
+            });
         }
 
         // Submit Pendaftaran Pasien
@@ -273,21 +314,30 @@
                 keluhan: document.getElementById("p_keluhan").value
             };
 
-            const res = await callAPI("daftarPasien", payload);
-            if (res.status === "success") {
-                alert(`Pasien Berhasil Didaftarkan!\nNomor Antrean: ${res.no_antrean}`);
+            const res = await callAPI("daftarPasien", payload, 'Mendaftarkan Pasien...');
+            if (res && res.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pendaftaran Berhasil',
+                    html: `Nomor Antrean Pasien: <b class="text-2xl text-blue-600">${res.no_antrean}</b>`
+                });
                 document.getElementById("formPendaftaran").reset();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: res.message || 'Terjadi kesalahan sistem.'
+                });
             }
         }
 
         // Fetch & Render Medis
         async function fetchAntreanMedis() {
             const container = document.getElementById("listMedis");
-            container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Memuat data...</div>`;
+            const res = await callAPI("getAntreanMedis", {}, 'Memuat Antrean Medis...');
             
-            const res = await callAPI("getAntreanMedis");
-            if (res.data.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Tidak ada antrean medis.</div>`;
+            if (!res.data || res.data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 font-medium">Tidak ada pasien yang antre.</div>`;
                 return;
             }
 
@@ -304,19 +354,19 @@
                         <div class="mt-4 space-y-3">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Diagnosa</label>
-                                <input type="text" id="diag_${item.id_antrean}" class="w-full px-3 py-1.5 border rounded text-xs">
+                                <input type="text" id="diag_${item.id_antrean}" class="w-full px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Rincian Obat</label>
-                                <textarea id="obat_${item.id_antrean}" rows="2" class="w-full px-3 py-1.5 border rounded text-xs"></textarea>
+                                <textarea id="obat_${item.id_antrean}" rows="2" class="w-full px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500"></textarea>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Dosis / Instruksi</label>
-                                <input type="text" id="dosis_${item.id_antrean}" class="w-full px-3 py-1.5 border rounded text-xs">
+                                <input type="text" id="dosis_${item.id_antrean}" class="w-full px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
                     </div>
-                    <button onclick="submitMedis('${item.id_antrean}')" class="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg transition">
+                    <button onclick="submitMedis('${item.id_antrean}')" class="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow transition">
                         Selesai & Kirim ke Farmasi
                     </button>
                 </div>
@@ -324,17 +374,36 @@
         }
 
         async function submitMedis(idAntrean) {
+            const diag = document.getElementById(`diag_${idAntrean}`).value;
+            const obat = document.getElementById(`obat_${idAntrean}`).value;
+            const dosis = document.getElementById(`dosis_${idAntrean}`).value;
+
+            if (!diag || !obat || !dosis) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Belum Lengkap',
+                    text: 'Mohon isi Diagnosa, Rincian Obat, dan Dosis sebelum melanjutkan.'
+                });
+                return;
+            }
+
             const payload = {
                 id_antrean: idAntrean,
-                diagnosa: document.getElementById(`diag_${idAntrean}`).value,
-                rincian_obat: document.getElementById(`obat_${idAntrean}`).value,
-                instruksi_dosis: document.getElementById(`dosis_${idAntrean}`).value,
+                diagnosa: diag,
+                rincian_obat: obat,
+                instruksi_dosis: dosis,
                 id_tenaga_medis: currentUser.nama
             };
 
-            const res = await callAPI("submitMedis", payload);
-            if (res.status === "success") {
-                alert("Pemeriksaan selesai, resep diteruskan ke Farmasi!");
+            const res = await callAPI("submitMedis", payload, 'Mengirim data ke Farmasi...');
+            if (res && res.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pemeriksaan Selesai',
+                    text: 'Resep obat berhasil diteruskan ke divisi Farmasi.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
                 fetchAntreanMedis();
             }
         }
@@ -342,11 +411,10 @@
         // Fetch & Render Farmasi
         async function fetchAntreanFarmasi() {
             const container = document.getElementById("listFarmasi");
-            container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Memuat data...</div>`;
+            const res = await callAPI("getAntreanFarmasi", {}, 'Memuat Antrean Farmasi...');
             
-            const res = await callAPI("getAntreanFarmasi");
-            if (res.data.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Tidak ada resep antre.</div>`;
+            if (!res.data || res.data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 font-medium">Tidak ada resep yang perlu disiapkan.</div>`;
                 return;
             }
 
@@ -363,7 +431,7 @@
                             <p><strong>Instruksi Dosis:</strong> ${item.instruksi_dosis}</p>
                         </div>
                     </div>
-                    <button onclick="submitFarmasi('${item.id_antrean}')" class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg transition">
+                    <button onclick="submitFarmasi('${item.id_antrean}')" class="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow transition">
                         Obat Siap & Serahkan
                     </button>
                 </div>
@@ -371,11 +439,30 @@
         }
 
         async function submitFarmasi(idAntrean) {
-            const res = await callAPI("submitFarmasi", { id_antrean: idAntrean });
-            if (res.status === "success") {
-                alert("Obat telah diserahkan, antrean selesai!");
-                fetchAntreanFarmasi();
-            }
+            Swal.fire({
+                title: 'Konfirmasi Penyerahan',
+                text: 'Pastikan obat sudah selesai disiapkan untuk diserahkan ke pasien.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Penyerahan Selesai',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const res = await callAPI("submitFarmasi", { id_antrean: idAntrean }, 'Menyelesaikan Antrean...');
+                    if (res && res.status === "success") {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Selesai',
+                            text: 'Antrean pasien telah diselesaikan.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        fetchAntreanFarmasi();
+                    }
+                }
+            });
         }
     </script>
 </body>
